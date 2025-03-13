@@ -6,13 +6,13 @@
  * - Ensures `/customcolor delete` only removes the targeted user
  *
  * - Original Authors: panpawn, jd, and other contributors
- * - Refactored & Optimized By: TrainerSky
+ * - Refactored & Updated for Latest API By: Prince Sky
  */
 
 import { FS } from '../../lib/fs';
 
 const CSS_FILE = 'config/custom.css';
-const COLOR_STORAGE = 'config/customcolors.json';
+const COLOR_STORAGE = 'db/customcolors.json';
 let userColors: { [userid: string]: string } = {};
 
 // Load stored colors from file
@@ -67,28 +67,14 @@ function generateCSS(userid: string, color: string): string {
     return `[class*="chatmessage-${userid}"] strong, [id*="userlist-user-${userid}"] strong, [id*="userlist-user-${userid}"] span {\n color: ${color} !important;\n}`;
 }
 
-// Function to check if a user has a custom color
-function hasCustomColor(userid: string): boolean {
-    return Object.prototype.hasOwnProperty.call(userColors, userid);
-}
-
-// Function to list all custom colors
-function listAllColors(): string {
-    if (Object.keys(userColors).length === 0) return "No users have custom colors set.";
-    return Object.entries(userColors)
-        .map(([userid, color]) => `<span style="color:${color}">${userid}</span>: ${color}`)
-        .join("<br>");
-}
-
-// Pokémon Showdown Chat Plugin Commands
+// Pokémon Showdown Chat Plugin Commands (Updated for Latest API)
 export const commands = {
     customcolor: {
         set(target, room, user) {
-            if (!user.named) return this.errorReply("You must be logged in to use this command.");
-            if (!user.can('mute')) return this.errorReply("You must be a Moderator (@) or higher to use this command.");
-            
+            this.checkCan('mute'); // Latest API for permissions
+
             const [targetUser, color] = target.split(',').map(param => param.trim());
-            if (!targetUser || !color) return this.errorReply("Usage: /customcolor set [username], [hex code]");
+            if (!targetUser || !color) return this.parse('/help customcolor');
             if (!/^#([0-9A-F]{6})$/i.test(color) || color.toUpperCase() === "#FFFFFF") {
                 return this.errorReply("Invalid color! Use a hex code like #FF5733 (White `#FFFFFF` is blocked).");
             }
@@ -96,33 +82,42 @@ export const commands = {
             const targetID = toID(targetUser);
             userColors[targetID] = color;
             saveColors();
+
+            this.modlog('CUSTOMCOLOR', targetUser, `Set color to ${color}`);
             this.sendReply(`Set custom color for ${targetUser}: ${color}`);
         },
         delete(target, room, user) {
-            if (!user.named) return this.errorReply("You must be logged in to use this command.");
-            if (!user.can('mute')) return this.errorReply("You must be a Moderator (@) or higher to reset colors.");
-            if (!target) return this.errorReply("Usage: /customcolor delete [username]");
+            this.checkCan('mute'); // Latest API for permissions
+            if (!target) return this.parse('/help customcolor delete');
 
             const targetID = toID(target);
-            if (!hasCustomColor(targetID)) return this.errorReply(`${target} does not have a custom color.`);
+            if (!userColors[targetID]) return this.errorReply(`${target} does not have a custom color.`);
 
             delete userColors[targetID];
             saveColors();
+
+            this.modlog('CUSTOMCOLOR', target, 'Reset color');
             this.sendReply(`Reset ${target}'s name color to default.`);
         },
         list(target, room, user) {
-            if (!user.can('mute')) return this.errorReply("You must be a Moderator (@) or higher to use this command.");
-            this.sendReplyBox(`<strong>Users with Custom Colors:</strong><br>${listAllColors()}`);
+            if (!this.runBroadcast()) return; // Latest API for broadcasting
+            if (Object.keys(userColors).length === 0) return this.sendReply("No users have custom colors set.");
+
+            let colorList = Object.entries(userColors)
+                .map(([userid, color]) => `<span style="color:${color}">${userid}</span>: ${color}`)
+                .join("<br>");
+
+            this.sendReplyBox(`<strong>Users with Custom Colors:</strong><br>${colorList}`);
         },
         preview(target, room, user) {
-            if (!user.named) return this.errorReply("You must be logged in to use this command.");
+            if (!this.runBroadcast()) return;
             const [targetUser, color] = target.split(',').map(param => param.trim());
-            if (!targetUser || !color) return this.errorReply("Usage: /customcolor preview [username], [hex code]");
+            if (!targetUser || !color) return this.parse('/help customcolor preview');
 
             this.sendReplyBox(`<strong>Preview:</strong> <span style="color: ${color}">${targetUser}</span>`);
         },
         reload(target, room, user) {
-            if (!user.can('hotpatch')) return this.errorReply("You must be an Admin (&) to reload colors.");
+            this.checkCan('hotpatch');
             saveColors();
             this.privateModAction(`(${user.name} has reloaded custom colors.)`);
         },
