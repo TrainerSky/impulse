@@ -1,4 +1,4 @@
-nameColor function (name, bold, userGroup) {
+nameColor(name, bold, userGroup) {
     let userGroupSymbol = Users.usergroups[toID(name)]
         ? `<b><font color=#948A88>${Users.usergroups[toID(name)].substr(0, 1)}</font></b>`
         : "";
