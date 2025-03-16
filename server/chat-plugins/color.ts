@@ -1,5 +1,4 @@
 export const commands: ChatCommands = {
-
 	previewcolor(target, room, user) {
 		if (!target) return this.sendReply("Usage: /previewcolor [username]");
 
@@ -7,7 +6,7 @@ export const commands: ChatCommands = {
 		if (!name) return this.sendReply("Error: You must provide a username.");
 
 		// Get color
-		const colorHex = usernameColor(name, this.colorCache);
+		const colorHex = usernameColor(name);
 
 		// Display result
 		this.sendReplyBox(
@@ -19,7 +18,7 @@ export const commands: ChatCommands = {
 
 	colorhex(target, room, user) {
 		const name = target.trim() || user.name;
-		const colorHex = usernameColor(name, this.colorCache);
+		const colorHex = usernameColor(name);
 
 		this.sendReplyBox(
 			`<b>Current Username Color for ${name}:</b> <br>
@@ -30,12 +29,16 @@ export const commands: ChatCommands = {
 };
 
 // =======================
+// Global Cache
+// =======================
+const colorCache: Record<string, string> = {};
+
+// =======================
 // Utility Functions
 // =======================
 
-function usernameColor(name, colorCache) {
+function usernameColor(name: string): string {
 	if (!name) throw new Error("usernameColor() called without a name.");
-	if (!colorCache) throw new Error("colorCache is undefined.");
 
 	if (colorCache[name]) return colorCache[name];
 
@@ -58,12 +61,12 @@ function usernameColor(name, colorCache) {
 	L += HLmod;
 
 	let { R: r, G: g, B: b } = HSLToRGB(H, S, L);
-	const toHex = (x) => x.toString(16).padStart(2, '0');
+	const toHex = (x: number) => x.toString(16).padStart(2, '0');
 	colorCache[name] = `#${toHex(Math.round(r * 255))}${toHex(Math.round(g * 255))}${toHex(Math.round(b * 255))}`;
 	return colorCache[name];
 }
 
-function HSLToRGB(H, S, L) {
+function HSLToRGB(H: number, S: number, L: number) {
 	let C = (100 - Math.abs(2 * L - 100)) * S / 10000;
 	let X = C * (1 - Math.abs((H / 60) % 2 - 1));
 	let m = L / 100 - C / 2;
@@ -80,4 +83,3 @@ function HSLToRGB(H, S, L) {
 
 	return { R: R1 + m, G: G1 + m, B: B1 + m };
 }
-colorCache: {};
