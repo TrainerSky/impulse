@@ -64,13 +64,12 @@ function nameColor(name: string, bold = false, userGroup = false): string {
 }
 
 export const commands: ChatCommands = {
-    namecolor(target, room, user) {
-        if (!target) target = user.name;
+    color(target, room, user) {
         if (!this.runBroadcast()) return;
 
-        const coloredName = nameColor(target, true, true);
-        this.sendReplyBox(`The name color for: ${coloredName}`);
-    },
-    namecolorhelp: ["/namecolor [name] - Displays the formatted name with its chat color."],
-};
+        let targetUser = target.trim() || user.name;
+        let formattedName = nameColor(targetUser, true, true); 
 
+        this.sendReplyBox(`Your name color: ${formattedName}`);
+    },
+};
