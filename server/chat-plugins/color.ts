@@ -1,16 +1,10 @@
 export const commands: ChatCommands = {
+
 	previewcolor(target, room, user) {
-		if (!target) return this.sendReply("Usage: /previewcolor [username], [customColor]");
+		if (!target) return this.sendReply("Usage: /previewcolor [username]");
 
-		const [name, customColor] = target.split(',').map(part => part.trim());
-
+		const name = target.trim();
 		if (!name) return this.sendReply("Error: You must provide a username.");
-		if (customColor && !/^#[0-9A-Fa-f]{6}$/.test(customColor)) {
-			return this.sendReply("Error: Custom color must be in hex format (#RRGGBB).");
-		}
-
-		// Inject custom color if provided
-		if (customColor) Config.customcolors[name] = customColor;
 
 		// Get color
 		const colorHex = usernameColor(name, this.colorCache);
@@ -40,15 +34,18 @@ export const commands: ChatCommands = {
 // =======================
 
 function usernameColor(name, colorCache) {
+	if (!name) throw new Error("usernameColor() called without a name.");
+	if (!colorCache) throw new Error("colorCache is undefined.");
+
 	if (colorCache[name]) return colorCache[name];
 
-	let hash = Config.customcolors[name] ? MD5(Config.customcolors[name]) : MD5(name);
+	let hash = MD5(name);
 	let H = parseInt(hash.substr(4, 4), 16) % 360; // 0 to 360
 	let S = parseInt(hash.substr(0, 4), 16) % 50 + 40; // 40 to 89
 	let L = Math.floor(parseInt(hash.substr(8, 4), 16) % 20 + 30); // 30 to 49
 
 	let { R, G, B } = HSLToRGB(H, S, L);
-	let lum = R ** 3 * 0.2126 + G ** 3 * 0.7152 + B ** 3 * 0.0722; // 0.013 (dark blue) to 0.737 (yellow)
+	let lum = R ** 3 * 0.2126 + G ** 3 * 0.7152 + B ** 3 * 0.0722;
 
 	let HLmod = (lum - 0.2) * -150;
 	if (HLmod > 18) HLmod = (HLmod - 18) * 2.5;
@@ -83,5 +80,4 @@ function HSLToRGB(H, S, L) {
 
 	return { R: R1 + m, G: G1 + m, B: B1 + m };
 }
-
 colorCache: {};
