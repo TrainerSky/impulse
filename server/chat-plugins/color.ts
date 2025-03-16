@@ -84,4 +84,4 @@ function HSLToRGB(H, S, L) {
 	return { R: R1 + m, G: G1 + m, B: B1 + m };
 }
 
-colorCache: {},
+colorCache: {};
